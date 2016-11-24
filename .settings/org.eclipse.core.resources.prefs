@@ -1,0 +1,8 @@
+eclipse.preferences.version=1
+encoding/addEventFeature.py=utf-8
+encoding/combineAllFile.py=utf-8
+encoding/deleteUseless.py=utf-8
+encoding/extractUnprocessed.py=utf-8
+encoding/preprocess.py=utf-8
+encoding/runByEachTopic.py=utf-8
+encoding/shtml2txt.py=utf-8
