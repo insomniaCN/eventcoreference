@@ -9,6 +9,7 @@ Created on Nov 23, 2016
 import os
 from util import read_all_lines
 import sys
+from bokeh.charts.builders.line_builder import Line
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -38,7 +39,6 @@ def InputProcess(inputFile):
 #     for a in attr_set:
 #         print a 
     return attr_set
-
 
 def FileGeneration(Destination, inputFile, file):
     
@@ -90,7 +90,7 @@ def FileGeneration(Destination, inputFile, file):
                 pos2 = attr[4].index(attr[0])
                 length_relation = len(relation[1])
                 start_pos = int(attr[2])+pos1-pos2
-                line = str(start_pos) + ',' + str(start_pos+length_pos-1) + ' ' + relation[0] + ' ' + relation[1] + '\n'
+                line = str(start_pos) + ',' + str(start_pos+length_relation-1) + ' ' + relation[0] + ' ' + relation[1] + '\n'
                 f_arg.write(line)
                     
             if not os.path.exists(entities):
@@ -120,25 +120,11 @@ def FileGeneration(Destination, inputFile, file):
         except Exception,e:  
             print Exception,":",e            
             continue
-
-def CombineCoreference(Destination, file):
-    PATH = u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全"
-
-    childfiles = []
-    for dirpath, dirpathnames, filenames in os.walk(PATH):
-        for each in dirpathnames:
-            childfile = os.path.join(dirpath, each)
-            directory = os.path.join(childfile, 'directory.all')
-            dir_lines = read_all_lines(directory)
-            for line in dir_lines:
-                coref_file = line + '.coref.events'
-                coref_dir = os.path.join(childfile, coref_file)
-                coref_lines = read_all_lines(coref_dir)
-                
-                
-                
-# FileGeneration(u'/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic18/', '/home/lzh/Downloads/datat/topic18_/n419076151.shtml.out','n419076151')
-if __name__ == '__main__':
+        
+def EventCoreference():
+    '''
+    event coreference within a second-file
+    '''
     PATH = u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全"
     testLoc = "/home/lzh/Documents/SinoCoreferencer/test"
   
@@ -163,4 +149,61 @@ if __name__ == '__main__':
 
                 os.chdir("/home/lzh/Documents/SinoCoreferencer/")
                 os.system("./run-coreference.sh test")
+                
+def CombineCoreference(Destination, file):
+
+    arg_file = file + '.arg'
+    arg_dir = os.path.join(Destination, arg_file)
+    arg_lines = read_all_lines(arg_dir)
+    coref_file = file + '.coref.events'
+    coref_dir = os.path.join(Destination, coref_file)
+    coref_lines = read_all_lines(coref_dir)
+    coref_attr_file = file + '.coreference'
+    coref_attr_dir = os.path.join(Destination, coref_attr_file)
+    f_coref = open(coref_attr_dir, 'w')
     
+    temp = []
+    temp_attr = []
+    for coref_line in coref_lines:
+        if coref_line != '============':
+            temp.append(coref_line)
+            pos = arg_lines.index(coref_line)
+            for i in range(pos+1,len(arg_lines)):
+                if arg_lines[i] != ('=================='):
+                    temp_attr.append(arg_lines[i])
+                else:
+                    break
+
+        else:
+            f_coref.write('='*18+'\n')
+            for t in temp:
+                f_coref.write(t+'\n')
+            f_coref.write('*'*18+'\n')
+            for t in temp_attr:
+                f_coref.write(t+'\n')
+                         
+            temp = []
+            temp_attr = []
+                        
+def CombineAllCoreference():
+    '''
+    process all files contained
+    '''
+    PATH = u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全"
+
+    childfiles = []
+    for dirpath, dirpathnames, filenames in os.walk(PATH):
+        for each in dirpathnames:
+            childpath = os.path.join(dirpath, each)
+            directory = os.path.join(childpath, 'directory.all')
+            dir_lines = read_all_lines(directory)
+            for line in dir_lines:
+                print childpath
+                print line
+                CombineCoreference(childpath, line)
+                                        
+if __name__ == '__main__':
+#     EventCoreference()
+#     CombineAllCoreference()
+#     CombineCoreference('/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62/','n454056663')
+    FileGeneration(Destination, inputFile, file)
