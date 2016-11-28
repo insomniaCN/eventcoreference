@@ -42,8 +42,6 @@ def InputProcess(inputFile):
 
 def FileGeneration(Destination, inputFile, file):
     
-
-    
     '''
     create file un-contained
     '''
@@ -71,13 +69,13 @@ def FileGeneration(Destination, inputFile, file):
             line = attr[2] + ',' + str(int(attr[2])+length-1) + ' ' + attr[1] + ' ' + attr[0] + '\n'
             f_arg.write(line)
             
-    #         add time feature
+    #         add place feature
             length_place = len(attr[9])
             if attr[9] != 'NULL':
                 line = attr[10] + ',' + str(int(attr[10])+length_place-1) + ' place ' + attr[9] + '\n'
                 f_arg.write(line)
                 
-    #         Add place Feature
+    #         Add time Feature
             length_time = len(attr[7])        
             if attr[7] != 'NULL':
                 line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' + attr[7] + '\n'
