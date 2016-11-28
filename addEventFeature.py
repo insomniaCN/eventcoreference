@@ -83,15 +83,15 @@ def FileGeneration(Destination, inputFile, file):
                 line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' + attr[7] + '\n'
                 f_arg.write(line)
             
-#             add relation feature     
-            for i in range(11,len(attr)):
-                relation = attr[i].split('：')
-                pos1 = attr[4].index(relation[1])
-                pos2 = attr[4].index(attr[0])
-                length_relation = len(relation[1])
-                start_pos = int(attr[2])+pos1-pos2
-                line = str(start_pos) + ',' + str(start_pos+length_relation-1) + ' ' + relation[0] + ' ' + relation[1] + '\n'
-                f_arg.write(line)
+#             add relation feature   
+#             for i in range(11,len(attr)):
+#                 relation = attr[i].split('：')
+#                 pos1 = attr[4].index(relation[1])
+#                 pos2 = attr[4].index(attr[0])
+#                 length_relation = len(relation[1])
+#                 start_pos = int(attr[2])+pos1-pos2
+#                 line = str(start_pos) + ',' + str(start_pos+length_relation-1) + ' ' + relation[0] + ' ' + relation[1] + '\n'
+#                 f_arg.write(line)
                     
             if not os.path.exists(entities):
                 open(entities, 'w')
@@ -143,7 +143,8 @@ def EventCoreference():
                 f_test.flush()
                 
                 input_file = line + '.shtml.out'
-                input_dir = os.path.join('/home/lzh/Downloads/datat/', each, input_file)
+                each_input  = each + '_'
+                input_dir = os.path.join('/home/lzh/Downloads/data/', each_input, input_file)
                 FileGeneration(childfile, input_dir, line)
                 
 
@@ -166,13 +167,16 @@ def CombineCoreference(Destination, file):
     temp_attr = []
     for coref_line in coref_lines:
         if coref_line != '============':
-            temp.append(coref_line)
-            pos = arg_lines.index(coref_line)
-            for i in range(pos+1,len(arg_lines)):
-                if arg_lines[i] != ('=================='):
-                    temp_attr.append(arg_lines[i])
-                else:
-                    break
+            try:
+                temp.append(coref_line)
+                pos = arg_lines.index(coref_line)
+                for i in range(pos+1,len(arg_lines)):
+                    if arg_lines[i] != ('=================='):
+                        temp_attr.append(arg_lines[i])
+                    else:
+                        break
+            except Exception,e:
+                print Exception, ':', e
 
         else:
             f_coref.write('='*18+'\n')
@@ -203,7 +207,8 @@ def CombineAllCoreference():
                 CombineCoreference(childpath, line)
                                         
 if __name__ == '__main__':
-#     EventCoreference()
+    EventCoreference()
 #     CombineAllCoreference()
 #     CombineCoreference('/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62/','n454056663')
-    FileGeneration(Destination, inputFile, file)
+#     FileGeneration('/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62/', '/home/lzh/Downloads/data/topic62_/n454062273.shtml.out', 'n454062273')
+    print("Done!")
