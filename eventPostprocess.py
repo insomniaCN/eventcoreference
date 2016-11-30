@@ -8,8 +8,9 @@ Created on Nov 23, 2016
 
 import os
 from util import read_all_lines
+from attributeAnalysis import *
 import sys
-from bokeh.charts.builders.line_builder import Line
+
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -26,6 +27,7 @@ def InputProcess(inputFile):
         attr = line.strip().split('|')
         word = attr[0].split('，')   
         attr[0] = word[0]
+        
 
         if attr[2] in pos_set:
             for i in range(len(attr_set)):
@@ -56,6 +58,14 @@ def FileGeneration(Destination, inputFile, file):
 #     all attributes extracted from '.out' file
     
     attr_set = InputProcess(inputFile)
+
+#     get news time    
+    destination_file = os.path.join(Destination, file)
+    news_time = ''
+    child_body = read_all_lines(destination_file)
+    for child_line in child_body:
+        if child_line.strip().startswith("time:"):
+            news_time = child_line[5:].strip()
     
     '''
     add event attributes
@@ -78,7 +88,14 @@ def FileGeneration(Destination, inputFile, file):
     #         Add time Feature
             length_time = len(attr[7])        
             if attr[7] != 'NULL':
+                
+#                 change time to standard formulate
+#                 new_time = TimeRegularzation(news_time, attr[7])
+#                 line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' + new_time + '\n'
+
+#                 without changing time
                 line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' + attr[7] + '\n'
+
                 f_arg.write(line)
             
 #             add relation feature   
@@ -99,7 +116,12 @@ def FileGeneration(Destination, inputFile, file):
             for attr in attr_set:
                 length = len(attr[7])
                 if attr[7] != 'NULL':
+                    
+#                     new_time = TimeRegularzation(news_time, attr[7])
+#                     line = attr[8] + ',' + str(int(attr[8])+length-1) + ' time time ' + new_time + '\n'
+
                     line = attr[8] + ',' + str(int(attr[8])+length-1) + ' time time ' + attr[7] + '\n'
+
                     f_time.write(line)
                 
          
@@ -115,6 +137,52 @@ def FileGeneration(Destination, inputFile, file):
                 
             if not os.path.exists(valueFile):
                 open(valueFile, 'w')
+        except Exception,e:  
+            print Exception,":",e            
+            continue
+
+def Post_arg(destination, inputFile, file):
+    
+    '''
+    post process
+    '''
+    arg = os.path.join(destination,"%s.arg" % file)
+     
+#     all attributes extracted from '.out' file
+    attr_set = InputProcess(inputFile)
+    
+#     get news time    
+    destination_file = os.path.join(destination, file)
+    news_time = ''
+    child_body = read_all_lines(destination_file)
+    for child_line in child_body:
+        if child_line.strip().startswith("time:"):
+            news_time = child_line[5:].strip()
+    
+#     post generate .arg file
+    f_arg = open(arg, 'w')
+    for attr in attr_set:
+        try:
+            f_arg.write("==================\n")
+            length = len(attr[0])
+            line = attr[2] + ',' + str(int(attr[2])+length-1) + ' ' + attr[1] + ' ' + attr[0] + '\n'
+            f_arg.write(line)
+            
+    #         add place feature
+            length_place = len(attr[9])
+            if attr[9] != 'NULL':
+                line = attr[10] + ',' + str(int(attr[10])+length_place-1) + ' place ' + attr[9] + '\n'
+                f_arg.write(line)
+                
+    #         Add time Feature
+            length_time = len(attr[7])        
+            if attr[7] != 'NULL':
+                
+#                 new_time = TimeRegularzation(news_time, attr[7])
+#                 line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' + new_time + '\n'
+                line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' +  attr[7]+ '\n'
+
+                f_arg.write(line)
         except Exception,e:  
             print Exception,":",e            
             continue
@@ -148,44 +216,52 @@ def EventCoreference():
 
                 os.chdir("/home/lzh/Documents/SinoCoreferencer/")
                 os.system("./run-coreference.sh test")
+                Post_arg(childfile, input_dir, line)
                 
-def CombineCoreference(Destination, file):
-
-    arg_file = file + '.arg'
-    arg_dir = os.path.join(Destination, arg_file)
-    arg_lines = read_all_lines(arg_dir)
+def CombineCoreference(Destination, file,):
+    '''
+    generate .coreference file ,which contains detail infomation about coreference events
+    '''
+    
     coref_file = file + '.coref.events'
     coref_dir = os.path.join(Destination, coref_file)
-    coref_lines = read_all_lines(coref_dir)
-    coref_attr_file = file + '.coreference'
-    coref_attr_dir = os.path.join(Destination, coref_attr_file)
-    f_coref = open(coref_attr_dir, 'w')
+    if os.path.exists(coref_dir):
+        coref_lines = read_all_lines(coref_dir)
+        arg_file = file + '.arg'
+        arg_dir = os.path.join(Destination, arg_file)
+        arg_lines = read_all_lines(arg_dir)
     
-    temp = []
-    temp_attr = []
-    for coref_line in coref_lines:
-        if coref_line != '============':
-            try:
-                temp.append(coref_line)
-                pos = arg_lines.index(coref_line)
-                for i in range(pos+1,len(arg_lines)):
-                    if arg_lines[i] != ('=================='):
-                        temp_attr.append(arg_lines[i])
-                    else:
-                        break
-            except Exception,e:
-                print Exception, ':', e
-
-        else:
-            f_coref.write('='*18+'\n')
-            for t in temp:
-                f_coref.write(t+'\n')
-            f_coref.write('*'*18+'\n')
-            for t in temp_attr:
-                f_coref.write(t+'\n')
-                         
-            temp = []
-            temp_attr = []
+        coref_attr_file = file + '.coreference2'
+        coref_attr_dir = os.path.join(Destination, coref_attr_file)
+        f_coref = open(coref_attr_dir, 'w')
+        
+        temp = []
+        temp_attr = []
+        for coref_line in coref_lines:
+            if coref_line != '============':
+                try:
+                    temp.append(coref_line)
+                    pos = arg_lines.index(coref_line)
+                    for i in range(pos+1,len(arg_lines)):
+                        if arg_lines[i] != ('=================='):
+                            temp_attr.append(arg_lines[i])
+                        else:
+                            break
+                except Exception,e:
+                    print Exception, ':', e
+    
+            else:
+                if temp:
+                    f_coref.write('='*18+'\n')
+                    for t in temp:
+                        f_coref.write(t+'\n')
+                    f_coref.write('*'*18+'\n')
+                if temp_attr:
+                    for t in temp_attr:
+                        f_coref.write(t+'\n')
+                             
+                temp = []
+                temp_attr = []
                         
 def CombineAllCoreference():
     '''
@@ -201,12 +277,63 @@ def CombineAllCoreference():
             dir_lines = read_all_lines(directory)
             for line in dir_lines:
                 print childpath
-                print line
+                print line         
                 CombineCoreference(childpath, line)
-                                        
+
+def EventCoreference_t():
+    '''
+    test
+    '''
+    PATH = u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62"
+    testLoc = "/home/lzh/Documents/SinoCoreferencer/test"
+  
+    childfiles = []
+    for dirpath, dirpathnames, filenames in os.walk(PATH):
+            directory = os.path.join(dirpath, 'directory.all')
+            dir_lines = read_all_lines(directory)
+            for line in dir_lines:  
+                f_test = open(testLoc, 'w')
+                absoulePath = os.path.join(dirpath, line).encode('utf-8')
+                print absoulePath
+                f_test.write(absoulePath+'\n')
+                f_test.flush()
+                
+                input_file = line + '.shtml.out'
+                each_input  = 'topic62_'
+                input_dir = os.path.join('/home/lzh/Downloads/data/', each_input, input_file)
+                FileGeneration(dirpath, input_dir, line)
+                
+
+                os.chdir("/home/lzh/Documents/SinoCoreferencer/")
+                os.system("./run-coreference.sh test")
+                Post_arg(dirpath, input_dir, line)
+
+def CombineAllCoreference_t():
+    '''
+    process all files contained
+    '''
+    PATH = u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62"
+
+    childfiles = []
+    for dirpath, dirpathnames, filenames in os.walk(PATH):
+            directory = os.path.join(dirpath, 'directory.all')
+            dir_lines = read_all_lines(directory)
+            for line in dir_lines:
+                print dirpath
+                print line         
+                CombineCoreference(dirpath, line)
+                    
 if __name__ == '__main__':
-    EventCoreference()
+#     EventCoreference()
 #     CombineAllCoreference()
-#     CombineCoreference('/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62/','n454056663')
-#     FileGeneration('/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62/', '/home/lzh/Downloads/data/topic62_/n454062273.shtml.out', 'n454062273')
+    
+    EventCoreference_t()
+    CombineAllCoreference_t()
+    '''
+    coreference1 within-time
+    coreference2 without-time
+    '''
+    
+#     CombineCoreference("/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62/", "n454056663", "2016-06-12 23:37:27")
+#     EventCoreference_test()
     print("Done!")

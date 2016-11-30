@@ -6,12 +6,16 @@ Created on Nov 28, 2016
 @author: lzh
 '''
 
-from eventPostprocess import InputProcess as ip
+from eventPostprocess import InputProcess
 import os
 import re
 from util import read_all_lines
 
 class Time():
+    '''
+    time format: xxxx-xx-xx xx
+    '''
+    
     def __init__(self):
         self.year = 0
         self.month = 0
@@ -23,7 +27,7 @@ class Time():
         return time_all
     
 def ExtractTiming(input):
-    attr_set = ip(input)
+    attr_set = InputProcess(input)
     time_set = []
     for attr in attr_set:
         if attr[7] != 'NULL':
@@ -81,9 +85,6 @@ def HourRegularzation(attr_time):
             return 0
         
 def TimeRegularzation(news_time, attr_time):
-    '''
-    time format: xxxx-xx-xx xx
-    '''
     
     news_time = news_time.strip().split(':')[0]
     news_year = news_time.split('-')[0]
@@ -132,10 +133,11 @@ def TimeRegularzation(news_time, attr_time):
     
     if new_time.year == news_year and new_time.month == news_month and new_time.day == news_day and new_time.hour == 0 and '昨日' in attr_time:
         new_time.day = int(news_day) - 1
-    if new_time.year == news_year and new_time.month == news_month and new_time.day == news_day and new_time.hour == 0 and '前日' in attr_time:
+    if new_time.year == news_year and new_time.month == news_month and new_time.day == news_day and new_time.hour == 0 and '前天' in attr_time:
         new_time.day = int(news_day) - 2        
     time_re = new_time.timeall()
-
+    if time_re == '2016-11-28 0':
+        print attr_time
     return time_re
 
 def data_analysis():

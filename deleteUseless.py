@@ -8,7 +8,7 @@ Created on Oct 28, 2016
 import os
 import time
 time1 = time.time()
-PATH = u"/home/lzh/Desktop/突发事件/社会安全/topic62"
+PATH = u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62"
 
 os.chdir(PATH)
 
@@ -35,6 +35,11 @@ os.system( "find . -name '*.value.crf' -type f -print -exec rm -rf {} \;")
 os.system( "find . -name '*.evc' -type f -print -exec rm -rf {} \;")
 os.system( "find . -name '*.md.crf' -type f -print -exec rm -rf {} \;")
 
+os.system( "find . -name '*.arg' -type f -print -exec rm -rf {} \;")
+os.system( "find . -name '*.coref.events' -type f -print -exec rm -rf {} \;")
+os.system( "find . -name '*.coreference2' -type f -print -exec rm -rf {} \;")
+os.system( "find . -name '*.trigger' -type f -print -exec rm -rf {} \;")
+os.system( "find . -name '*.time' -type f -print -exec rm -rf {} \;")
 time2 = time.time()
 t = time2 - time1
 
