@@ -7,6 +7,7 @@ Created on Nov 23, 2016
 '''
 
 import os
+import collections
 from util import read_all_lines
 from attributeAnalysis import *
 import sys
@@ -117,10 +118,10 @@ def FileGeneration(Destination, inputFile, file):
                 length = len(attr[7])
                 if attr[7] != 'NULL':
                     
-#                     new_time = TimeRegularzation(news_time, attr[7])
-#                     line = attr[8] + ',' + str(int(attr[8])+length-1) + ' time time ' + new_time + '\n'
-
-                    line = attr[8] + ',' + str(int(attr[8])+length-1) + ' time time ' + attr[7] + '\n'
+                    new_time = TimeRegularzation(news_time, attr[7])
+                    line = attr[8] + ',' + str(int(attr[8])+length-1) + ' time time ' + new_time + '\n'
+#                     without changing time
+#                     line = attr[8] + ',' + str(int(attr[8])+length-1) + ' time time ' + attr[7] + '\n'
 
                     f_time.write(line)
                 
@@ -171,16 +172,17 @@ def Post_arg(destination, inputFile, file):
     #         add place feature
             length_place = len(attr[9])
             if attr[9] != 'NULL':
-                line = attr[10] + ',' + str(int(attr[10])+length_place-1) + ' place ' + attr[9] + '\n'
+                line = attr[10] + ',' + str(int(attr[10])+length_place-1) + '\t'+'place'+'\t' + attr[9] + '\n'
                 f_arg.write(line)
                 
     #         Add time Feature
             length_time = len(attr[7])        
             if attr[7] != 'NULL':
                 
-#                 new_time = TimeRegularzation(news_time, attr[7])
-#                 line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' + new_time + '\n'
-                line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' +  attr[7]+ '\n'
+                new_time = TimeRegularzation(news_time, attr[7])
+                line = attr[8] + ',' + str(int(attr[8])+length_time-1) +'\t'+'time'+'\t'+new_time+'\n'
+#                     without changing time
+#                 line = attr[8] + ',' + str(int(attr[8])+length_time-1) + ' time ' +  attr[7]+ '\n'
 
                 f_arg.write(line)
         except Exception,e:  
@@ -217,7 +219,106 @@ def EventCoreference():
                 os.chdir("/home/lzh/Documents/SinoCoreferencer/")
                 os.system("./run-coreference.sh test")
                 Post_arg(childfile, input_dir, line)
+
+def writeCoreference(coref_lines, arg_lines, coref_attr_dir):
+    '''
+    write into file
+    '''
+    f_coref = open(coref_attr_dir, 'w')
+    temp = []
+    temp_attr = []
+    time_attr = []
+    
+    for coref_line in coref_lines:
+        if coref_line != '============':
+            try:
+                temp.append(coref_line)
+                pos = arg_lines.index(coref_line)
+                for i in range(pos+1,len(arg_lines)):
+                    if arg_lines[i] != ('=================='):
+                        temp_attr.append(arg_lines[i])
+                    else:
+                        break
+                     
+            except Exception,e:
+                print Exception, ':', e
+
+        else:
+            if temp:
+                f_coref.write('='*18+'\n')
+                for t in temp:
+                    f_coref.write(t+'\n')
+                f_coref.write('*'*18+'\n')
+            if temp_attr:
+                for t in temp_attr:
+                    f_coref.write(t+'\n')
+            
+def writeCoreference_v2(coref_lines, arg_lines, coref_attr_dir):
+    '''
+    write into file
+    '''
+    f_coref = open(coref_attr_dir, 'w')
+    temp = {}
+    time_attr = {}
+    
+    for coref_line in coref_lines:
+        if coref_line != '============':
+
+            temp.setdefault(coref_line,{})
+            pos = arg_lines.index(coref_line)
+            for i in range(pos+1,len(arg_lines)):
+                if arg_lines[i] != ('=================='):
+                    key, value = arg_lines[i].strip().split('\t')[1:3]
+                    temp[coref_line][key] = value
+                    if key == 'time':
+                        time_attr.setdefault(value,[]).append(coref_line)
+                else:
+                    break
+                     
+        
+
+        else:
+            if temp:
+                attr_temp = []
+                f_coref.write('='*18+'\n')
+                sorted_attr = sorted(time_attr.iteritems(), key = lambda d:len(d[1]), reverse=True)
+                k = ''
+                if sorted_attr != []:
+                    k = sorted_attr[0][0]
+                    del sorted_attr[0]
+                for key,value in temp.items():
+                    if value.has_key('time') == False or value['time'] == k:     
+                        f_coref.write(key+'\n')
+                        for k,v in value.items():
+                            attr_temp.append((k,v))
+                        del temp[key]
+
+                f_coref.write('*'*18+'\n')
+                for a in attr_temp:
+                    f_coref.write(a[0]+' '+a[1]+'\n')
                 
+                while temp != {}:
+                    attr_temp = []
+                    guard = ''
+                    for key,value in temp.items():
+                        if guard == '':
+                            f_coref.write('='*18+'\n')
+                            guard = value['time']
+                            f_coref.write(key+'\n')
+                            for k,v in value.items():
+                                attr_temp.append((k,v))
+                            del temp[key]
+                        else:
+                            if value['time'] == guard:
+                                f_coref.write(key+'\n')
+                                for k,v in value.items():
+                                    attr_temp.append((k,v))
+                                del temp[key]
+                    f_coref.write('*'*18+'\n')
+                    for a in attr_temp:
+                        f_coref.write(a[0]+' '+a[1]+'\n')
+                        
+                            
 def CombineCoreference(Destination, file,):
     '''
     generate .coreference file ,which contains detail infomation about coreference events
@@ -226,42 +327,20 @@ def CombineCoreference(Destination, file,):
     coref_file = file + '.coref.events'
     coref_dir = os.path.join(Destination, coref_file)
     if os.path.exists(coref_dir):
+        
         coref_lines = read_all_lines(coref_dir)
         arg_file = file + '.arg'
         arg_dir = os.path.join(Destination, arg_file)
         arg_lines = read_all_lines(arg_dir)
     
-        coref_attr_file = file + '.coreference2'
+        coref_attr_file = file + '.coreference3'
         coref_attr_dir = os.path.join(Destination, coref_attr_file)
         f_coref = open(coref_attr_dir, 'w')
+        f_coref.close()
         
-        temp = []
-        temp_attr = []
-        for coref_line in coref_lines:
-            if coref_line != '============':
-                try:
-                    temp.append(coref_line)
-                    pos = arg_lines.index(coref_line)
-                    for i in range(pos+1,len(arg_lines)):
-                        if arg_lines[i] != ('=================='):
-                            temp_attr.append(arg_lines[i])
-                        else:
-                            break
-                except Exception,e:
-                    print Exception, ':', e
-    
-            else:
-                if temp:
-                    f_coref.write('='*18+'\n')
-                    for t in temp:
-                        f_coref.write(t+'\n')
-                    f_coref.write('*'*18+'\n')
-                if temp_attr:
-                    for t in temp_attr:
-                        f_coref.write(t+'\n')
-                             
-                temp = []
-                temp_attr = []
+        writeCoreference_v2(coref_lines, arg_lines, coref_attr_dir)   
+        
+             
                         
 def CombineAllCoreference():
     '''
@@ -322,18 +401,27 @@ def CombineAllCoreference_t():
                 print dirpath
                 print line         
                 CombineCoreference(dirpath, line)
-                    
+
+
+     
+    
+               
 if __name__ == '__main__':
 #     EventCoreference()
 #     CombineAllCoreference()
     
-    EventCoreference_t()
-    CombineAllCoreference_t()
+#     run event coreference
+#     EventCoreference_t()
+#     run coreference combine
+ 
+#     CombineAllCoreference_t()
     '''
     coreference1 within-time
     coreference2 without-time
+    coreference3 abondon mistakes with time
     '''
-    
+    Post_arg(u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62", "/home/lzh/Downloads/data/topic62_/n454059513.shtml.out", "n454059513")
+    CombineCoreference(u"/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62","n454059513")    
 #     CombineCoreference("/home/lzh/Documents/SinoCoreferencer/突发事件/社会安全/topic62/", "n454056663", "2016-06-12 23:37:27")
 #     EventCoreference_test()
     print("Done!")

@@ -8,8 +8,10 @@ Created on Nov 28, 2016
 
 from eventPostprocess import InputProcess
 import os
+import datetime
 import re
 from util import read_all_lines
+from argcomplete.my_shlex import split
 
 class Time():
     '''
@@ -140,7 +142,28 @@ def TimeRegularzation(news_time, attr_time):
         print attr_time
     return time_re
 
-def data_analysis():
+def timeDistance(time1, time2):
+    '''
+    @time: xxxx-xx-xx xx
+    '''
+    y,m = time1.strip().split('-')[0:1]
+    d,h = (time1.strip().split('-')[2]).split(' ')[0:1]
+    date_time1 = datetime.datetime(y,m,d, h)
+    y2,m2 = time1.strip().split('-')[0:1]
+    d2,h2 = (time1.strip().split('-')[2]).split(' ')[0:1]
+    date_time2 = datetime.datetime(y2,m2,d2, h2)
+    distance_seconds = (date_time2 - date_time1).seconds
+
+    if distance_seconds/60 < 3:
+#     distance between time pair
+        return 1
+    else:
+        return 0
+    
+def dataAnalysis():
+    '''
+    count the num of time both processed and unprocessed 
+    '''
     lines = read_all_lines("/home/lzh/Downloads/data/collection.time")
     new_lines = []
     process = 0
